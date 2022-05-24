@@ -18,7 +18,7 @@ async function run(){
     await client.connect();
     const productCollection = client.db('machinery_parts').collection('products');
     const orderCollection = client.db('machinery_parts').collection('orders');
-    
+
     // all products load-----
     app.get('/product', async(req, res) => {
       const query = {};
@@ -40,6 +40,14 @@ async function run(){
       const order = req.body;
       const result = await orderCollection.insertOne(order);
       res.send(result);
+    });
+    
+    // customer order dashboard data load---
+    app.get('/order', async(req, res) => {
+      const customer = req.query.customer;
+      const query = {customer: customer};
+      const orders = await orderCollection.find(query).toArray();
+      res.send(orders);
     });
   }
   finally{
