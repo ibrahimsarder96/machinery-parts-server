@@ -39,6 +39,19 @@ async function run(){
     const userCollection = client.db('machinery_parts').collection('users');
     const addProductCollection = client.db('machinery_parts').collection('addProducts');
 
+
+    const verifyAdmin = async(req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({email: requester});
+      if(requesterAccount.role === 'admin'){
+        next()
+      }
+      else{
+        res.status(403).send({message: 'Forbidden access'});
+       }
+    }
+
+
     // all products load-----
     app.get('/product', async(req, res) => {
       const query = {};
@@ -97,21 +110,14 @@ async function run(){
     });
 
     // user admin-----
-      app.put('/user/admin/:email', verifyJWT, async(req, res) => {
+      app.put('/user/admin/:email', verifyJWT, verifyAdmin, async(req, res) => {
         const email = req.params.email;
-        const requester = req.decoded.email;
-        const requesterAccount = await userCollection.findOne({email: requester});
-        if(requesterAccount.role === 'admin') {
           const filter = {email: email};
           const updateDoc = {
             $set: {role: 'admin'},
           };
           const result = await userCollection.updateOne(filter, updateDoc);
           res.send(result);
-        }
-        else{
-          res.status(404).send({message: 'forbidden'});
-        }
       });
 
       // admin
@@ -123,9 +129,30 @@ async function run(){
       });
 
       // product add---
-      app.post('/product', async(req, res) => {
+      app.post('/product',verifyJWT, async(req, res) => {
         const product = req.body;
         const result = await addProductCollection.insertOne(product);
+        res.send(result);
+      });
+
+      // product manage---
+      app.get('/product',verifyJWT, verifyAdmin, async(req, res) =>{
+        const products = await addProductCollection.find().toArray();
+        res.send(products);
+      });
+      // delete product----
+      app.delete('/product/:email',verifyJWT,verifyAdmin, async(req, res) => {
+        const email = req.params.email;
+        const filter = {email: email};
+        const result = await addProductCollection.deleteOne(filter);
+        res.send(result);
+      });
+
+      // delete order----
+      app.delete('/order/:email',verifyJWT, async(req, res) => {
+        const email = req.params.email;
+        const filter = {email: email};
+        const result = await addProductCollection.deleteOne(filter);
         res.send(result);
       });
   }
