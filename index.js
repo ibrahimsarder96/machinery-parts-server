@@ -37,6 +37,7 @@ async function run(){
     const productCollection = client.db('machinery_parts').collection('products');
     const orderCollection = client.db('machinery_parts').collection('orders');
     const userCollection = client.db('machinery_parts').collection('users');
+    const addProductCollection = client.db('machinery_parts').collection('addProducts');
 
     // all products load-----
     app.get('/product', async(req, res) => {
@@ -119,6 +120,13 @@ async function run(){
         const user = await userCollection.findOne({email: email});
         const isAdmin = user.role === 'admin';
         res.send({admin: isAdmin})
+      });
+
+      // product add---
+      app.post('/product', async(req, res) => {
+        const product = req.body;
+        const result = await addProductCollection.insertOne(product);
+        res.send(result);
       });
   }
   finally{
