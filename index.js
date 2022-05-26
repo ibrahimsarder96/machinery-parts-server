@@ -5,6 +5,7 @@ const app = express();
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require ('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // middleware--------
 app.use(cors());
@@ -154,6 +155,26 @@ async function run(){
         const filter = {email: email};
         const result = await addProductCollection.deleteOne(filter);
         res.send(result);
+      });
+      // payment
+      app.get('/order/:id', async(req,res) => {
+        const id = req.params.id;
+        const query = {_id: ObjectId(id)};
+        const orders = await orderCollection.findOne(query);
+        res.send(orders);
+      });
+
+      // payment ----
+      app.post('/create-payment-intent', async(req, res) => {
+        const order = req.body;
+        const price = order.price;
+        const amount = price*100;
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          current: 'usd',
+          payment_method_types:['card']
+        });
+        res.send({clientSecret: paymentIntent.client_secret})
       });
   }
   finally{
